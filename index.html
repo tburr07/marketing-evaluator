@@ -1,0 +1,1443 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Marketing Evaluator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Libre+Baskerville:ital@0;1&family=IBM+Plex+Sans:wght@300;400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+    <style>
+        :root {
+            --bg:           #0a0a0c;
+            --surface:      #111114;
+            --surface-2:    #18181c;
+            --surface-3:    #1f1f24;
+            --border:       rgba(255,255,255,0.07);
+            --border-mid:   rgba(255,255,255,0.11);
+            --border-hi:    rgba(255,255,255,0.18);
+            --text:         #eeeef2;
+            --text-2:       #b4b4c2;
+            --muted:        #6e6e82;
+            --accent:       #e8eaf0;
+            --green:        #52d68a;
+            --green-dim:    rgba(82,214,138,0.1);
+            --green-border: rgba(82,214,138,0.22);
+            --yellow:       #e8c96a;
+            --yellow-dim:   rgba(232,201,106,0.1);
+            --yellow-border:rgba(232,201,106,0.22);
+            --red:          #e06868;
+            --red-dim:      rgba(224,104,104,0.1);
+            --red-border:   rgba(224,104,104,0.22);
+            --blue:         #7aaee8;
+            --blue-dim:     rgba(122,174,232,0.1);
+            --blue-border:  rgba(122,174,232,0.22);
+            --cyan:         #5ec4d6;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: 'IBM Plex Sans', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background: radial-gradient(ellipse 80% 50% at 50% 0%, rgba(122,174,232,0.03) 0%, transparent 70%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .page {
+            position: relative;
+            z-index: 1;
+            max-width: 1180px;
+            margin: 0 auto;
+            padding: 44px 28px 100px;
+        }
+
+        .site-header {
+            display: flex;
+            align-items: baseline;
+            justify-content: space-between;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .wordmark {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 12px;
+            font-weight: 500;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--muted);
+        }
+
+        .wordmark strong { color: var(--text-2); font-weight: 500; }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .header-tag {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            color: var(--muted);
+            letter-spacing: 0.06em;
+        }
+
+        .share-btn {
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 5px;
+            padding: 5px 12px;
+            color: var(--muted);
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: all 0.12s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .share-btn:hover  { border-color: var(--border-hi); color: var(--text-2); }
+        .share-btn.copied { border-color: var(--green-border); color: var(--green); }
+
+        .hero {
+            display: grid;
+            grid-template-columns: 1.3fr 0.7fr;
+            gap: 1px;
+            margin-bottom: 32px;
+            background: var(--border);
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            overflow: hidden;
+        }
+
+        .hero-main { background: var(--surface); padding: 36px 40px; }
+        .hero-side  { background: var(--surface); display: flex; flex-direction: column; }
+
+        .hero-side-item {
+            padding: 20px 24px;
+            border-bottom: 1px solid var(--border);
+            flex: 1;
+        }
+
+        .hero-side-item:last-child { border-bottom: none; }
+
+        .eyebrow {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 18px;
+        }
+
+        .hero-main h1 {
+            font-family: 'Libre Baskerville', serif;
+            font-size: 34px;
+            line-height: 1.18;
+            font-weight: 400;
+            margin-bottom: 16px;
+            color: var(--text);
+            letter-spacing: -0.01em;
+        }
+
+        .hero-sub {
+            color: var(--text-2);
+            font-size: 14px;
+            line-height: 1.7;
+            margin-bottom: 28px;
+            max-width: 54ch;
+            font-weight: 300;
+        }
+
+        .hero-tags { display: flex; gap: 8px; flex-wrap: wrap; }
+
+        .hero-tag {
+            background: var(--surface-2);
+            border: 1px solid var(--border-mid);
+            border-radius: 4px;
+            padding: 5px 12px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            color: var(--text-2);
+            letter-spacing: 0.04em;
+        }
+
+        .side-label {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+
+        .hero-side-item p {
+            font-size: 13px;
+            color: var(--text-2);
+            line-height: 1.6;
+            font-weight: 300;
+        }
+
+        .presets-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 24px;
+            flex-wrap: wrap;
+        }
+
+        .presets-label {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-right: 4px;
+        }
+
+        .preset-btn {
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 7px 14px;
+            color: var(--text-2);
+            font-family: 'IBM Plex Sans', sans-serif;
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.12s;
+            white-space: nowrap;
+        }
+
+        .preset-btn:hover {
+            border-color: var(--border-hi);
+            color: var(--text);
+            background: var(--surface-3);
+        }
+
+        .layout {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .left-col, .right-col {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 22px;
+        }
+
+        .card-label {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            font-weight: 500;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 16px;
+        }
+
+        .input-row {
+            position: relative;
+            margin-bottom: 8px;
+        }
+
+        .input-prefix {
+            position: absolute;
+            left: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--muted);
+            font-size: 13px;
+            font-family: 'IBM Plex Mono', monospace;
+            pointer-events: none;
+        }
+
+        input[type="text"] {
+            width: 100%;
+            padding: 11px 12px 11px 26px;
+            background: var(--surface-2);
+            border: 1px solid var(--border-mid);
+            border-radius: 6px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 13px;
+            color: var(--text);
+            outline: none;
+            transition: border-color 0.15s;
+        }
+
+        input[type="text"]::placeholder { color: var(--muted); }
+        input[type="text"]:focus { border-color: var(--border-hi); }
+
+        .optional-divider {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 12px 0 10px;
+        }
+
+        .optional-divider::before,
+        .optional-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border);
+        }
+
+        .optional-divider span {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 9px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--muted);
+            white-space: nowrap;
+        }
+
+        .calc-btn {
+            width: 100%;
+            padding: 12px;
+            background: var(--accent);
+            color: #0a0a0c;
+            border: none;
+            border-radius: 6px;
+            font-family: 'IBM Plex Sans', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 8px;
+            letter-spacing: 0.02em;
+            transition: opacity 0.15s;
+        }
+
+        .calc-btn:hover { opacity: 0.85; }
+
+        .hint {
+            font-size: 11px;
+            color: var(--muted);
+            margin-top: 10px;
+            font-family: 'IBM Plex Mono', monospace;
+        }
+
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 16px;
+        }
+
+        .spend-pct {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 22px;
+            font-weight: 500;
+            color: var(--text);
+            letter-spacing: -0.02em;
+        }
+
+        .slider-wrap {
+            position: relative;
+            padding: 14px 0 8px;
+        }
+
+        .safe-zone {
+            position: absolute;
+            top: 14px;
+            height: 4px;
+            background: var(--green-dim);
+            border: 1px solid var(--green-border);
+            border-radius: 2px;
+            pointer-events: none;
+            z-index: 1;
+            display: none;
+        }
+
+        .break-even-marker {
+            position: absolute;
+            top: 6px;
+            width: 1px;
+            height: 20px;
+            background: var(--cyan);
+            pointer-events: none;
+            z-index: 2;
+            display: none;
+        }
+
+        .break-even-label {
+            position: absolute;
+            top: -14px;
+            transform: translateX(-50%);
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 9px;
+            font-weight: 500;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            color: var(--cyan);
+            white-space: nowrap;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            height: 4px;
+            -webkit-appearance: none;
+            appearance: none;
+            background: linear-gradient(to right, #c0392b, #e67e22, #d4ac0d, #27ae60);
+            border-radius: 2px;
+            outline: none;
+            position: relative;
+            z-index: 3;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--text);
+            box-shadow: 0 1px 6px rgba(0,0,0,0.6);
+            cursor: pointer;
+            border: 2px solid var(--bg);
+        }
+
+        .slider-chips {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-top: 14px;
+        }
+
+        .chip {
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 10px 12px;
+        }
+
+        .chip-label {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 9px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 4px;
+        }
+
+        .chip-value {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 12px;
+            font-weight: 500;
+            color: var(--text-2);
+        }
+
+        .proj-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+
+        .proj-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 18px 20px;
+        }
+
+        .proj-label {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 9px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 8px;
+        }
+
+        .proj-value {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 20px;
+            font-weight: 500;
+            color: var(--text);
+            margin-bottom: 6px;
+            letter-spacing: -0.02em;
+        }
+
+        .delta-tag {
+            display: inline-block;
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            font-weight: 500;
+            padding: 2px 7px;
+            border-radius: 3px;
+            background: var(--surface-3);
+            color: var(--muted);
+        }
+
+        .delta-tag.up   { background: var(--green-dim); color: var(--green); }
+        .delta-tag.down { background: var(--red-dim);   color: var(--red);   }
+
+        .cac-panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 20px 22px;
+            display: none;
+        }
+
+        .cac-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+        }
+
+        .cac-item .label {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 9px;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 5px;
+        }
+
+        .cac-item .value {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 18px;
+            font-weight: 500;
+            color: var(--text);
+            letter-spacing: -0.02em;
+        }
+
+        .cac-item .sub {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            color: var(--muted);
+            margin-top: 3px;
+        }
+
+        .cac-note {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            color: var(--muted);
+            margin-top: 14px;
+            line-height: 1.6;
+            padding-top: 12px;
+            border-top: 1px solid var(--border);
+        }
+
+        .scale-bar {
+            height: 6px;
+            background: linear-gradient(to right, #c0392b, #e67e22, #d4ac0d, #27ae60);
+            border-radius: 2px;
+            position: relative;
+            margin: 14px 0 10px;
+        }
+
+        .scale-marker {
+            position: absolute;
+            top: -5px;
+            width: 16px;
+            height: 16px;
+            background: var(--text);
+            border-radius: 50%;
+            border: 2px solid var(--bg);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.5);
+            transform: translateX(-50%);
+            transition: left 0.22s cubic-bezier(0.34,1.4,0.64,1);
+        }
+
+        .zone-row {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .zone-label {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 9px;
+            letter-spacing: 0.04em;
+            color: var(--muted);
+        }
+
+        .metric-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .metric-value {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 20px;
+            font-weight: 500;
+            color: var(--text);
+            letter-spacing: -0.02em;
+        }
+
+        .metric-delta {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            font-weight: 500;
+            padding: 3px 9px;
+            border-radius: 3px;
+        }
+
+        .metric-delta.up      { background: var(--green-dim);  color: var(--green); }
+        .metric-delta.down    { background: var(--red-dim);    color: var(--red);   }
+        .metric-delta.neutral { background: var(--surface-3);  color: var(--muted); }
+
+        .insight-card {
+            background: var(--surface-2);
+            border: 1px solid var(--border-mid);
+            border-left: 2px solid var(--cyan);
+            border-radius: 8px;
+            padding: 14px 16px;
+            display: none;
+        }
+
+        .insight-label {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 9px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--cyan);
+            margin-bottom: 6px;
+        }
+
+        .insight-card p {
+            font-size: 13px;
+            line-height: 1.65;
+            color: var(--text-2);
+            font-weight: 300;
+        }
+
+        .status-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 7px;
+            padding: 6px 14px;
+            border-radius: 4px;
+            font-family: 'IBM Plex Mono', monospace;
+            font-weight: 500;
+            font-size: 11px;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            margin-bottom: 14px;
+        }
+
+        .status-pill::before {
+            content: '';
+            width: 6px; height: 6px;
+            border-radius: 50%;
+            background: currentColor;
+            flex-shrink: 0;
+        }
+
+        .status-strong     { background: var(--green-dim);  color: var(--green);  border: 1px solid var(--green-border);  }
+        .status-stable     { background: var(--blue-dim);   color: var(--blue);   border: 1px solid var(--blue-border);   }
+        .status-borderline { background: var(--yellow-dim); color: var(--yellow); border: 1px solid var(--yellow-border); }
+        .status-risk       { background: var(--red-dim);    color: var(--red);    border: 1px solid var(--red-border);    }
+
+        .interp-text {
+            font-size: 13px;
+            color: var(--text-2);
+            line-height: 1.7;
+            margin-bottom: 14px;
+            font-weight: 300;
+        }
+
+        .action-block {
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 14px;
+            margin-bottom: 10px;
+        }
+
+        .action-label {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 9px;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--muted);
+            margin-bottom: 6px;
+        }
+
+        .action-block p {
+            font-size: 13px;
+            line-height: 1.6;
+            color: var(--text-2);
+            font-weight: 300;
+        }
+
+        .max-safe-row {
+            display: none;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--surface-2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px 14px;
+            margin-bottom: 10px;
+        }
+
+        .max-safe-row .label {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 10px;
+            color: var(--muted);
+            letter-spacing: 0.04em;
+        }
+
+        .max-safe-row .value {
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 13px;
+            font-weight: 500;
+            color: var(--green);
+        }
+
+        .copy-btn {
+            width: 100%;
+            padding: 10px;
+            background: transparent;
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            color: var(--muted);
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            font-weight: 500;
+            letter-spacing: 0.06em;
+            cursor: pointer;
+            transition: all 0.12s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .copy-btn:hover  { border-color: var(--border-hi); color: var(--text-2); }
+        .copy-btn.copied { border-color: var(--green-border); color: var(--green); }
+
+        .chart-card canvas { max-height: 200px; }
+
+        .footer-note {
+            margin-top: 48px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border);
+            font-family: 'IBM Plex Mono', monospace;
+            font-size: 11px;
+            color: var(--muted);
+            line-height: 1.6;
+            max-width: 72ch;
+        }
+
+        @media (max-width: 880px) {
+            .hero        { grid-template-columns: 1fr; }
+            .layout      { grid-template-columns: 1fr; }
+            .proj-grid   { grid-template-columns: 1fr; }
+            .cac-grid    { grid-template-columns: 1fr 1fr; }
+            .hero-main h1{ font-size: 26px; }
+            .hero-side   { border-top: 1px solid var(--border); }
+        }
+    </style>
+</head>
+<body>
+<div class="page">
+
+    <header class="site-header">
+        <div class="wordmark">Marketing <strong>Evaluator</strong></div>
+        <div class="header-right">
+            <div class="header-tag">MER · CMAM · CAC · Spend Sensitivity</div>
+            <button class="share-btn" id="shareBtn" onclick="shareURL()">
+                <svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                    <circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/>
+                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/>
+                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/>
+                </svg>
+                Share
+            </button>
+        </div>
+    </header>
+
+    <section class="hero">
+        <div class="hero-main">
+            <div class="eyebrow">Marketing Profit Intelligence</div>
+            <h1>Evaluate efficiency, profitability, and scaling pressure in one view.</h1>
+            <p class="hero-sub">
+                Enter your revenue, marketing spend, and cost of goods to calculate MER and CMAM — then use the spend model to understand how changes in budget affect your margin and break-even position. Optionally add customers acquired to surface CAC.
+            </p>
+            <div class="hero-tags">
+                <span class="hero-tag">MER</span>
+                <span class="hero-tag">CMAM</span>
+                <span class="hero-tag">CAC</span>
+                <span class="hero-tag">Break-even detection</span>
+                <span class="hero-tag">Spend sensitivity</span>
+                <span class="hero-tag">Margin simulation</span>
+            </div>
+        </div>
+
+        <div class="hero-side">
+            <div class="hero-side-item">
+                <div class="side-label">MER — Marketing Efficiency Ratio</div>
+                <p>Revenue divided by marketing spend. Indicates how much top-line revenue each dollar of marketing generates. Does not account for costs.</p>
+            </div>
+            <div class="hero-side-item">
+                <div class="side-label">CMAM — Contribution Margin After Marketing</div>
+                <p>Revenue minus cost of goods and marketing, expressed as a percentage of revenue. Measures profitability after marketing investment.</p>
+            </div>
+            <div class="hero-side-item">
+                <div class="side-label">CAC — Customer Acquisition Cost</div>
+                <p>Marketing spend divided by customers acquired. Measures the average cost to acquire one customer. Optional — enter customers acquired to enable.</p>
+            </div>
+        </div>
+    </section>
+
+    <div class="presets-row">
+        <span class="presets-label">Scenarios</span>
+        <button class="preset-btn" onclick="loadPreset('scaling')">Scaling Brand</button>
+        <button class="preset-btn" onclick="loadPreset('efficient')">Efficient Brand</button>
+        <button class="preset-btn" onclick="loadPreset('overspending')">High Spend Pressure</button>
+        <button class="preset-btn" onclick="loadPreset('struggling')">Low Efficiency</button>
+    </div>
+
+    <div class="layout">
+
+        <div class="left-col">
+
+            <div class="card">
+                <div class="card-label">Inputs</div>
+                <div class="input-row">
+                    <span class="input-prefix">$</span>
+                    <input type="text" id="revenue" placeholder="Revenue">
+                </div>
+                <div class="input-row">
+                    <span class="input-prefix">$</span>
+                    <input type="text" id="marketing" placeholder="Marketing Spend">
+                </div>
+                <div class="input-row">
+                    <span class="input-prefix">$</span>
+                    <input type="text" id="cost" placeholder="Cost of Goods (COGS)">
+                </div>
+
+                <div class="optional-divider"><span>Optional</span></div>
+
+                <div class="input-row">
+                    <span class="input-prefix" style="font-size:11px;">#</span>
+                    <input type="text" id="customers" placeholder="Customers Acquired (optional)">
+                </div>
+
+                <button class="calc-btn" onclick="calculate()">Calculate</button>
+                <p class="hint">Commas accepted — e.g. 1,000,000</p>
+            </div>
+
+            <div class="card">
+                <div class="slider-header">
+                    <div class="card-label" style="margin-bottom:0">Spend Adjustment</div>
+                    <span class="spend-pct" id="sliderValueDisplay">100%</span>
+                </div>
+                <div class="slider-wrap" id="sliderWrap">
+                    <div class="safe-zone" id="safeZone"></div>
+                    <div class="break-even-marker" id="breakEvenMarker">
+                        <div class="break-even-label">Break-even</div>
+                    </div>
+                    <input type="range" id="spendSlider" min="50" max="200" value="100" oninput="adjustSpend(this.value)">
+                </div>
+                <div class="slider-chips">
+                    <div class="chip">
+                        <div class="chip-label">Break-even spend</div>
+                        <div class="chip-value" id="breakEvenText">—</div>
+                    </div>
+                    <div class="chip">
+                        <div class="chip-label">Max viable spend</div>
+                        <div class="chip-value" id="maxSafeText" style="color:var(--green)">—</div>
+                    </div>
+                </div>
+                <p class="hint" style="margin-top:10px">Diminishing returns applied above baseline. Green zone indicates CMAM ≥ 15%.</p>
+            </div>
+
+            <div class="proj-grid">
+                <div class="proj-card">
+                    <div class="proj-label">Projected Revenue</div>
+                    <div class="proj-value" id="projectedRevenue">—</div>
+                    <span class="delta-tag" id="revDelta">baseline</span>
+                </div>
+                <div class="proj-card">
+                    <div class="proj-label">Projected Marketing Spend</div>
+                    <div class="proj-value" id="projectedMarketing">—</div>
+                    <span class="delta-tag" id="mktDelta">baseline</span>
+                </div>
+            </div>
+
+            <div class="cac-panel" id="cacPanel">
+                <div class="card-label">Customer Acquisition Cost — CAC</div>
+                <div class="cac-grid">
+                    <div class="cac-item">
+                        <div class="label">CAC</div>
+                        <div class="value" id="cacValue">—</div>
+                        <div class="sub">per customer</div>
+                    </div>
+                    <div class="cac-item">
+                        <div class="label">Projected CAC</div>
+                        <div class="value" id="cacProjected">—</div>
+                        <div class="sub">at current spend</div>
+                    </div>
+                    <div class="cac-item">
+                        <div class="label">CAC : Revenue</div>
+                        <div class="value" id="cacRatio">—</div>
+                        <div class="sub">cost vs rev per customer</div>
+                    </div>
+                </div>
+                <div class="cac-note" id="cacNote"></div>
+            </div>
+
+            <div class="card chart-card">
+                <div class="card-label">Spend Curve — Revenue vs. Contribution Margin</div>
+                <canvas id="spendChart"></canvas>
+            </div>
+
+        </div>
+
+        <div class="right-col">
+
+            <div class="insight-card" id="insightCard">
+                <div class="insight-label">Analysis</div>
+                <p id="insightText">—</p>
+            </div>
+
+            <div class="card">
+                <div class="card-label">Efficiency — MER</div>
+                <div class="scale-bar">
+                    <div class="scale-marker" id="merMarker" style="left:0%"></div>
+                </div>
+                <div class="zone-row">
+                    <span class="zone-label">Below threshold</span>
+                    <span class="zone-label">Moderate</span>
+                    <span class="zone-label">Strong</span>
+                    <span class="zone-label">Exceptional</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-value" id="merText">—</span>
+                    <span class="metric-delta neutral" id="merDelta">—</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-label">Profitability — CMAM</div>
+                <div class="scale-bar">
+                    <div class="scale-marker" id="cmamMarker" style="left:0%"></div>
+                </div>
+                <div class="zone-row">
+                    <span class="zone-label">Negative</span>
+                    <span class="zone-label">Low</span>
+                    <span class="zone-label">Moderate</span>
+                    <span class="zone-label">Strong</span>
+                </div>
+                <div class="metric-row">
+                    <span class="metric-value" id="cmamText">—</span>
+                    <span class="metric-delta neutral" id="cmamDelta">—</span>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-label">Assessment</div>
+                <div id="statusPill" class="status-pill status-stable">—</div>
+                <p class="interp-text" id="interpretation"></p>
+                <div class="action-block">
+                    <div class="action-label">Recommended Action</div>
+                    <p id="recommendedAction">—</p>
+                </div>
+                <div class="max-safe-row" id="maxSafeCard">
+                    <span class="label">Max viable spend (CMAM ≥ 15%)</span>
+                    <span class="value" id="maxSafeCardValue">—</span>
+                </div>
+                <button class="copy-btn" id="copyBtn" onclick="copySummary()">
+                    <svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <rect x="9" y="9" width="13" height="13" rx="2"/>
+                        <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
+                    </svg>
+                    Export Summary
+                </button>
+            </div>
+
+        </div>
+    </div>
+
+    <p class="footer-note">
+        Note: Spend sensitivity projections use an estimated diminishing returns model and are intended for directional analysis only. Results reflect modelled assumptions, not actual channel performance data. Verify against your own attribution and cost data before making budget decisions.
+    </p>
+
+</div>
+
+<script>
+let baseRevenue   = null;
+let baseMarketing = null;
+let baseCost      = null;
+let baseCustomers = null;
+let baseMER       = null;
+let baseCMAM      = null;
+let spendChart    = null;
+
+const presets = {
+    scaling:     { revenue: '850,000',  marketing: '180,000', cost: '350,000', customers: '1,200' },
+    efficient:   { revenue: '620,000',  marketing: '90,000',  cost: '200,000', customers: '980'   },
+    overspending:{ revenue: '500,000',  marketing: '220,000', cost: '210,000', customers: '600'   },
+    struggling:  { revenue: '300,000',  marketing: '140,000', cost: '200,000', customers: ''      },
+};
+
+function loadPreset(key) {
+    const p = presets[key];
+    document.getElementById('revenue').value   = p.revenue;
+    document.getElementById('marketing').value = p.marketing;
+    document.getElementById('cost').value      = p.cost;
+    document.getElementById('customers').value = p.customers || '';
+    document.getElementById('spendSlider').value = 100;
+    calculate();
+}
+
+function cleanNumber(v) { return Number(String(v).replace(/,/g, '').trim()); }
+function fmt(v)    { return '$' + v.toLocaleString(undefined, { maximumFractionDigits: 0 }); }
+function fmtPct(v) { return (v >= 0 ? '+' : '') + v.toFixed(1) + '%'; }
+
+function projectedRevenue(multiplier) {
+    if (multiplier === 1) return baseRevenue;
+    if (multiplier < 1)   return baseRevenue * Math.pow(multiplier, 0.85);
+    return baseRevenue * Math.pow(multiplier, 0.65);
+}
+
+function getMetrics(multiplier) {
+    const marketing = baseMarketing * multiplier;
+    const revenue   = projectedRevenue(multiplier);
+    const mer       = revenue / marketing;
+    const cmam      = ((revenue - baseCost - marketing) / revenue) * 100;
+    return { revenue, marketing, mer, cmam };
+}
+
+function findBreakEven() {
+    let last = null;
+    for (let i = 50; i <= 200; i += 0.5) {
+        const { cmam } = getMetrics(i / 100);
+        if (cmam >= 0) last = i / 100;
+        else if (last !== null) return last;
+    }
+    return last;
+}
+
+function findMaxSafe() {
+    let last = null;
+    for (let i = 50; i <= 200; i += 0.5) {
+        const { cmam } = getMetrics(i / 100);
+        if (cmam >= 15) last = i / 100;
+    }
+    return last;
+}
+
+function updateCAC(multiplier) {
+    const panel   = document.getElementById('cacPanel');
+    const custRaw = document.getElementById('customers').value.trim();
+    if (!custRaw) { panel.style.display = 'none'; baseCustomers = null; return; }
+
+    const customers = cleanNumber(custRaw);
+    if (isNaN(customers) || customers <= 0) { panel.style.display = 'none'; return; }
+
+    baseCustomers = customers;
+    panel.style.display = 'block';
+
+    const { marketing } = getMetrics(multiplier);
+    const baseCac              = baseMarketing / baseCustomers;
+    const projectedCustomers   = baseCustomers * Math.pow(multiplier, 0.65);
+    const projectedCac         = marketing / projectedCustomers;
+    const revenuePerCustomer   = baseRevenue / baseCustomers;
+    const cacToRevRatio        = (baseCac / revenuePerCustomer) * 100;
+
+    document.getElementById('cacValue').innerText     = fmt(baseCac);
+    document.getElementById('cacProjected').innerText = multiplier === 1 ? fmt(baseCac) : fmt(projectedCac);
+
+    const ratioEl = document.getElementById('cacRatio');
+    ratioEl.innerText    = cacToRevRatio.toFixed(1) + '%';
+    ratioEl.style.color  = cacToRevRatio < 30 ? 'var(--green)' : cacToRevRatio < 50 ? 'var(--yellow)' : 'var(--red)';
+
+    const noteEl = document.getElementById('cacNote');
+    let note = '';
+    if (baseCac < 20) {
+        note = 'CAC is low relative to typical acquisition costs. Verify that all marketing costs are accounted for.';
+    } else if (projectedCac > baseCac * 1.3 && multiplier > 1) {
+        note = `At ${Math.round(multiplier * 100)}% spend, projected CAC rises to ${fmt(projectedCac)} — a ${fmtPct(((projectedCac - baseCac) / baseCac) * 100)} increase. Diminishing returns are raising cost per customer.`;
+    } else if (projectedCac < baseCac * 0.9 && multiplier < 1) {
+        note = `Reducing spend improves projected CAC to ${fmt(projectedCac)}, but fewer customers are acquired overall.`;
+    } else {
+        note = `Baseline CAC is ${fmt(baseCac)} per customer. Revenue per customer is ${fmt(revenuePerCustomer)}.`;
+    }
+    noteEl.innerText = note;
+}
+
+function encodeState() {
+    const r  = document.getElementById('revenue').value.trim();
+    const m  = document.getElementById('marketing').value.trim();
+    const c  = document.getElementById('cost').value.trim();
+    const cu = document.getElementById('customers').value.trim();
+    const s  = document.getElementById('spendSlider').value;
+    if (!r || !m || !c) return null;
+    return btoa(JSON.stringify({ r, m, c, cu, s }));
+}
+
+function decodeState(encoded) {
+    try { return JSON.parse(atob(encoded)); }
+    catch (e) { return null; }
+}
+
+function loadFromURL() {
+    const params  = new URLSearchParams(window.location.search);
+    const encoded = params.get('s');
+    if (!encoded) return;
+    const state = decodeState(encoded);
+    if (!state) return;
+    document.getElementById('revenue').value   = state.r;
+    document.getElementById('marketing').value = state.m;
+    document.getElementById('cost').value      = state.c;
+    document.getElementById('customers').value = state.cu || '';
+    document.getElementById('spendSlider').value = state.s || 100;
+    document.getElementById('sliderValueDisplay').innerText = (state.s || 100) + '%';
+    calculate(true);
+}
+
+function shareURL() {
+    const encoded = encodeState();
+    if (!encoded) return;
+    const url = window.location.origin + window.location.pathname + '?s=' + encoded;
+    navigator.clipboard.writeText(url).then(() => {
+        const btn = document.getElementById('shareBtn');
+        btn.innerText = '✓ Link copied';
+        btn.classList.add('copied');
+        setTimeout(() => {
+            btn.innerHTML = `<svg width="11" height="11" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="18" cy="5" r="3"/><circle cx="6" cy="12" r="3"/><circle cx="18" cy="19" r="3"/><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"/><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"/></svg> Share`;
+            btn.classList.remove('copied');
+        }, 2200);
+    });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    ['revenue', 'marketing', 'cost', 'customers'].forEach(id => {
+        document.getElementById(id).addEventListener('keydown', e => {
+            if (e.key === 'Enter') calculate();
+        });
+    });
+    loadFromURL();
+});
+
+function calculate(preserveSlider = false) {
+    baseRevenue   = cleanNumber(document.getElementById('revenue').value);
+    baseMarketing = cleanNumber(document.getElementById('marketing').value);
+    baseCost      = cleanNumber(document.getElementById('cost').value);
+
+    if (isNaN(baseRevenue) || isNaN(baseMarketing) || isNaN(baseCost) ||
+        baseRevenue <= 0 || baseMarketing <= 0 || baseCost < 0) {
+        alert('Please enter valid positive numbers for Revenue, Marketing Spend, and COGS.');
+        return;
+    }
+
+    const base = getMetrics(1);
+    baseMER  = base.mer;
+    baseCMAM = base.cmam;
+
+    updateBreakEvenUI();
+    updateMaxSafeUI();
+    buildChart();
+    updateValues(Number(document.getElementById('spendSlider').value) / 100);
+}
+
+function adjustSpend(value) {
+    document.getElementById('sliderValueDisplay').innerText = value + '%';
+    if (baseRevenue === null) return;
+    updateValues(Number(value) / 100);
+}
+
+function updateValues(multiplier) {
+    const { revenue, marketing, mer, cmam } = getMetrics(multiplier);
+
+    const merPos  = Math.max(0, Math.min((mer / 6) * 100, 100));
+    const cmamPos = Math.max(0, Math.min(((cmam + 20) / 70) * 100, 100));
+    document.getElementById('merMarker').style.left  = merPos  + '%';
+    document.getElementById('cmamMarker').style.left = cmamPos + '%';
+
+    document.getElementById('merText').innerText  = mer.toFixed(2) + '×';
+    document.getElementById('cmamText').innerText = cmam.toFixed(1) + '%';
+
+    const merDiff  = mer - baseMER;
+    const cmamDiff = cmam - baseCMAM;
+
+    const merDEl  = document.getElementById('merDelta');
+    const cmamDEl = document.getElementById('cmamDelta');
+
+    merDEl.innerText  = (merDiff >= 0 ? '+' : '') + merDiff.toFixed(2);
+    cmamDEl.innerText = fmtPct(cmamDiff);
+    merDEl.className  = 'metric-delta ' + (Math.abs(merDiff)  < 0.01 ? 'neutral' : merDiff  > 0 ? 'up' : 'down');
+    cmamDEl.className = 'metric-delta ' + (Math.abs(cmamDiff) < 0.1  ? 'neutral' : cmamDiff > 0 ? 'up' : 'down');
+
+    document.getElementById('projectedRevenue').innerText   = fmt(revenue);
+    document.getElementById('projectedMarketing').innerText = fmt(marketing);
+
+    const revPct = ((revenue - baseRevenue) / baseRevenue) * 100;
+    const revEl  = document.getElementById('revDelta');
+    const mktEl  = document.getElementById('mktDelta');
+
+    if (multiplier === 1) {
+        revEl.innerText = 'baseline'; revEl.className = 'delta-tag';
+        mktEl.innerText = 'baseline'; mktEl.className = 'delta-tag';
+    } else {
+        revEl.innerText = fmtPct(revPct);
+        revEl.className = 'delta-tag ' + (revPct >= 0 ? 'up' : 'down');
+        mktEl.innerText = fmtPct((multiplier - 1) * 100);
+        mktEl.className = 'delta-tag';
+    }
+
+    updateStatus(mer, cmam);
+    updateInsight(mer, cmam, multiplier);
+    updateCAC(multiplier);
+}
+
+function updateStatus(mer, cmam) {
+    let status, interp, action, cls;
+
+    if (mer >= 3.5 && cmam >= 25) {
+        status = 'Strong'; cls = 'status-strong';
+        interp = 'Efficiency and margin are both within a favorable range. The business has capacity to absorb additional spend without significant deterioration.';
+        action = 'Incremental spend increases are likely to remain productive. Monitor MER closely as spend scales — diminishing returns will begin to compress efficiency over time.';
+    } else if (mer >= 3 && cmam >= 15) {
+        status = 'Stable'; cls = 'status-stable';
+        interp = 'Performance is within an acceptable range. Margin is positive and efficiency is moderate, though the buffer before compression is limited.';
+        action = 'Test measured increases in spend before committing to scale. Track CMAM as a primary signal of whether growth is sustainable.';
+    } else if (mer >= 2 && cmam >= 10) {
+        status = 'Borderline'; cls = 'status-borderline';
+        interp = 'Margin exists but is narrow. At current efficiency levels, additional spend is likely to reduce profitability before revenue responds sufficiently.';
+        action = 'Prioritize improving channel efficiency or reducing cost structure before scaling spend. Validate unit economics at smaller test budgets first.';
+    } else {
+        status = 'Under Pressure'; cls = 'status-risk';
+        interp = 'Efficiency or margin is below sustainable thresholds. Additional spend is unlikely to generate sufficient return at current performance levels.';
+        action = 'Reduce spend pressure and review the underlying cost structure, pricing model, or channel mix before pursuing growth.';
+    }
+
+    const pill = document.getElementById('statusPill');
+    pill.innerText = status;
+    pill.className = 'status-pill ' + cls;
+    document.getElementById('interpretation').innerText    = interp;
+    document.getElementById('recommendedAction').innerText = action;
+}
+
+function updateInsight(mer, cmam, multiplier) {
+    const card = document.getElementById('insightCard');
+    const text = document.getElementById('insightText');
+    card.style.display = 'block';
+
+    const pct = Math.round(multiplier * 100);
+    let msg   = '';
+
+    if (multiplier > 1.15 && cmam < baseCMAM - 5) {
+        msg = `At ${pct}% of baseline spend, contribution margin has declined by more than 5 percentage points. Revenue growth is not keeping pace with the increased cost base.`;
+    } else if (multiplier > 1.15 && cmam >= baseCMAM) {
+        msg = `At ${pct}% of baseline spend, contribution margin is holding steady. Revenue growth is broadly absorbing the increase in marketing cost.`;
+    } else if (multiplier < 0.85 && cmam > baseCMAM + 3) {
+        msg = `Reducing spend to ${pct}% improves contribution margin, which may indicate that marginal spend is generating disproportionately low return at current levels.`;
+    } else if (cmam < 0) {
+        msg = `At this spend level, contribution margin is negative. Revenue is insufficient to cover the combined cost of goods and marketing.`;
+    } else if (mer >= 4 && cmam >= 25) {
+        msg = `Current efficiency and margin levels are strong. This represents a favorable baseline from which to evaluate incremental spend increases.`;
+    } else if (mer < 2) {
+        msg = `MER below 2× indicates limited top-line return on marketing investment. Reviewing channel allocation or creative performance may improve efficiency.`;
+    } else {
+        msg = `Current metrics are within a normal operating range. Use the spend adjustment slider to model how budget changes affect margin and efficiency.`;
+    }
+
+    text.innerText = msg;
+}
+
+function updateBreakEvenUI() {
+    const be     = findBreakEven();
+    const marker = document.getElementById('breakEvenMarker');
+    const chip   = document.getElementById('breakEvenText');
+
+    if (be === null) {
+        marker.style.display = 'none';
+        chip.innerText = 'Not within range';
+        return;
+    }
+
+    const pct     = be * 100;
+    const leftPct = ((pct - 50) / (200 - 50)) * 100;
+    marker.style.display = 'block';
+    marker.style.left    = leftPct + '%';
+
+    const { marketing } = getMetrics(be);
+    chip.innerText = pct.toFixed(0) + '% · ' + fmt(marketing);
+}
+
+function updateMaxSafeUI() {
+    const ms        = findMaxSafe();
+    const chipText  = document.getElementById('maxSafeText');
+    const card      = document.getElementById('maxSafeCard');
+    const cardValue = document.getElementById('maxSafeCardValue');
+    const safeZone  = document.getElementById('safeZone');
+
+    if (ms === null) {
+        chipText.innerText     = 'Not within range';
+        card.style.display     = 'none';
+        safeZone.style.display = 'none';
+        return;
+    }
+
+    const { marketing } = getMetrics(ms);
+    chipText.innerText  = Math.round(ms * 100) + '% · ' + fmt(marketing);
+    cardValue.innerText = Math.round(ms * 100) + '% (' + fmt(marketing) + ')';
+    card.style.display  = 'flex';
+
+    const startPct = ((100 - 50) / (200 - 50)) * 100;
+    const endPct   = ((ms * 100 - 50) / (200 - 50)) * 100;
+    safeZone.style.display = 'block';
+    safeZone.style.left    = Math.min(startPct, endPct) + '%';
+    safeZone.style.width   = Math.abs(endPct - startPct) + '%';
+}
+
+function buildChart() {
+    const labels = [], revData = [], marginData = [];
+
+    for (let i = 50; i <= 200; i += 5) {
+        const m = i / 100;
+        const { revenue, marketing } = getMetrics(m);
+        labels.push(i + '%');
+        revData.push(Math.round(revenue));
+        marginData.push(Math.round(revenue - baseCost - marketing));
+    }
+
+    const ctx = document.getElementById('spendChart').getContext('2d');
+    if (spendChart) spendChart.destroy();
+
+    spendChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels,
+            datasets: [
+                {
+                    label: 'Projected Revenue',
+                    data: revData,
+                    borderColor: '#7aaee8',
+                    backgroundColor: 'rgba(122,174,232,0.05)',
+                    borderWidth: 1.5,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 0,
+                    pointHoverRadius: 3,
+                },
+                {
+                    label: 'Contribution Margin',
+                    data: marginData,
+                    borderColor: '#52d68a',
+                    backgroundColor: 'rgba(82,214,138,0.04)',
+                    borderWidth: 1.5,
+                    fill: true,
+                    tension: 0.4,
+                    pointRadius: 0,
+                    pointHoverRadius: 3,
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            interaction: { mode: 'index', intersect: false },
+            plugins: {
+                legend: {
+                    labels: {
+                        color: '#6e6e82',
+                        font: { family: 'IBM Plex Mono', size: 10 },
+                        boxWidth: 10,
+                        padding: 16,
+                    }
+                },
+                tooltip: {
+                    backgroundColor: '#18181c',
+                    titleColor: '#eeeef2',
+                    bodyColor: '#6e6e82',
+                    borderColor: 'rgba(255,255,255,0.08)',
+                    borderWidth: 1,
+                    titleFont: { family: 'IBM Plex Mono', size: 11 },
+                    bodyFont:  { family: 'IBM Plex Mono', size: 11 },
+                    callbacks: {
+                        label: ctx => '  ' + ctx.dataset.label + ': $' + ctx.raw.toLocaleString()
+                    }
+                }
+            },
+            scales: {
+                x: {
+                    ticks: { color: '#6e6e82', font: { family: 'IBM Plex Mono', size: 9 }, maxTicksLimit: 8 },
+                    grid:  { color: 'rgba(255,255,255,0.04)' },
+                    border:{ color: 'rgba(255,255,255,0.06)' },
+                },
+                y: {
+                    ticks: {
+                        color: '#6e6e82',
+                        font: { family: 'IBM Plex Mono', size: 9 },
+                        callback: v => '$' + (Math.abs(v) >= 1000 ? (v / 1000).toFixed(0) + 'k' : v)
+                    },
+                    grid: {
+                        color: ctx => ctx.tick.value === 0 ? 'rgba(94,196,214,0.3)' : 'rgba(255,255,255,0.04)',
+                        lineWidth: ctx => ctx.tick.value === 0 ? 1.5 : 1,
+                    },
+                    border: { color: 'rgba(255,255,255,0.06)' },
+                }
+            }
+        }
+    });
+}
+
+function copySummary() {
+    if (baseRevenue === null) return;
+    const multiplier    = Number(document.getElementById('spendSlider').value) / 100;
+    const { mer, cmam } = getMetrics(multiplier);
+    const status        = document.getElementById('statusPill').innerText;
+    const insight       = document.getElementById('insightText').innerText;
+    const action        = document.getElementById('recommendedAction').innerText;
+    const cacLine       = baseCustomers
+        ? `CAC:          ${document.getElementById('cacValue').innerText} per customer\n`
+        : '';
+
+    const text =
+`Marketing Evaluator — Summary Report
+──────────────────────────────────────
+MER:          ${mer.toFixed(2)}×
+CMAM:         ${cmam.toFixed(1)}%
+${cacLine}Spend level:  ${Math.round(multiplier * 100)}% of baseline
+Assessment:   ${status}
+
+Analysis:
+${insight}
+
+Recommended action:
+${action}`;
+
+    navigator.clipboard.writeText(text).then(() => {
+        const btn = document.getElementById('copyBtn');
+        btn.innerText = '✓  Copied to clipboard';
+        btn.classList.add('copied');
+        setTimeout(() => {
+            btn.innerHTML = `<svg width="12" height="12" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg> Export Summary`;
+            btn.classList.remove('copied');
+        }, 2200);
+    });
+}
+</script>
+</body>
+</html>
